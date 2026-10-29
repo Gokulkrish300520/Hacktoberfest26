@@ -1,0 +1,24 @@
+# Render Blueprint: New > Blueprint > pick this repo.
+# Gemma needs ~8 GB RAM, so the free (512 MB) plan cannot run it. Check render.com/pricing before deploying.
+services:
+  - type: web
+    name: hacktoberfest-cafe
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: pro plus  # 4 CPU / 8 GB. Change in the dashboard if your account offers a cheaper 8 GB instance.
+    healthCheckPath: /health
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 15
+    envVars:
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: API_KEYS
+        sync: false
+      - key: SMALL_MODEL
+        value: gemma4:e2b-it-qat
+      - key: BIG_MODEL
+        value: gemma4:e2b-it-qat
+      - key: RATE_LIMIT_PER_MIN
+        value: "20"

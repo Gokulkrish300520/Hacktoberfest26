@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PromptShield Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#14213D;--navy-2:#1C2D52;--line:#2B3F6B;--text:#E8EDF7;--muted:#9AA8C7;--red:#E63946;--amber:#F4A261;--green:#4CC38A;--blue:#7AA7FF}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--navy);color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+header{display:flex;align-items:center;gap:16px;padding:18px clamp(16px,3vw,36px);border-bottom:1px solid var(--line)}
+h1{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:1.5rem;margin:0;letter-spacing:.01em}
+.live{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem;margin-left:auto}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 #4CC38A88;animation:pulse 2s infinite}
+.dot.off{background:var(--red);animation:none}
+@keyframes pulse{70%{box-shadow:0 0 0 10px #4CC38A00}100%{box-shadow:0 0 0 0 #4CC38A00}}
+main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;padding:20px clamp(16px,3vw,36px) 40px}
+@media (max-width:960px){main{grid-template-columns:1fr}}
+.stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+@media (max-width:960px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:520px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--navy-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat .v{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:2.1rem;font-weight:700;line-height:1.1}
+.stat .k{color:var(--muted);font-size:.85rem}
+.stat.alert{border-color:var(--red);background:linear-gradient(180deg,#E6394622,transparent)}
+.stat.alert .v{color:var(--red)}
+section.box{background:var(--navy-2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-width:0}
+section.box h2{font-size:1rem;margin:0 0 12px;font-weight:700}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;max-height:62vh;overflow-y:auto}
+.feed li{border-left:4px solid var(--red);background:#0F1A31;border-radius:8px;padding:10px 12px}
+.feed li.new{animation:slide .5s ease-out}
+@keyframes slide{from{transform:translateX(-14px);background:#E6394633}to{transform:none}}
+.feed .row1{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;color:var(--muted)}
+.tag{padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:500}
+.tag.layer{background:#E6394626;color:#FF9AA2}
+.tag.owasp{background:#7AA7FF22;color:var(--blue)}
+.tag.risk{background:#F4A26122;color:var(--amber)}
+.feed .prompt{margin:6px 0 2px;font-size:.95rem;word-break:break-word}
+.feed .reason{font-size:.82rem;color:var(--muted)}
+.feed .img{font-size:.82rem;color:var(--amber);margin-top:4px}
+.empty{color:var(--muted);font-size:.95rem;padding:10px 0}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:10px;align-items:center;font-size:.85rem}
+.bar .track{grid-column:1/-1;height:8px;background:#0F1A31;border-radius:999px;overflow:hidden}
+.bar .fill{height:100%;border-radius:999px;transition:width .4s}
+.bar .n{text-align:right;font-weight:700}
+.side{display:flex;flex-direction:column;gap:20px;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500}
+td.p{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v-allow{color:var(--green)} .v-block{color:var(--red)} .v-error{color:var(--amber)}
+.full{grid-column:1/-1}
+.login{max-width:420px;margin:12vh auto;background:var(--navy-2);border:1px solid var(--line);border-radius:12px;padding:24px}
+.login input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:#0F1A31;color:var(--text);font:inherit;margin:10px 0}
+.login button{background:var(--amber);border:0;border-radius:8px;padding:10px 16px;font:600 1rem inherit;cursor:pointer;color:var(--navy)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <h1>PromptShield Monitor</h1>
+  <p>Enter the admin token to watch live attacks.</p>
+  <form id="login-form"><input id="token" type="password" autocomplete="current-password" aria-label="Admin token" placeholder="Admin token"><button>Open monitor</button></form>
+  <p id="login-err" style="color:var(--red)" hidden>That token didn't work. Check the ADMIN_TOKEN setting on your server.</p>
+</div>
+
+<div id="app" hidden>
+<header>
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E63946" stroke-width="2" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5Z"/><path d="m9 12 2 2 4-4" stroke="#4CC38A"/></svg>
+  <h1>PromptShield live attack monitor</h1>
+  <span class="live"><span class="dot" id="dot"></span><span id="status">Connecting</span></span>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat alert"><div class="v" id="s-blocked">0</div><div class="k">Attacks blocked</div></div>
+    <div class="stat"><div class="v" id="s-total">0</div><div class="k">Requests</div></div>
+    <div class="stat"><div class="v" id="s-cache">0</div><div class="k">Answered from cache</div></div>
+    <div class="stat"><div class="v" id="s-model">0</div><div class="k">Gemma calls</div></div>
+    <div class="stat"><div class="v" id="s-pii">0</div><div class="k">Personal data masked</div></div>
+    <div class="stat"><div class="v" id="s-known">0</div><div class="k">Known attack patterns</div></div>
+  </div>
+
+  <section class="box">
+    <h2>Blocked attacks, newest first</h2>
+    <ul class="feed" id="feed"></ul>
+    <p class="empty" id="feed-empty">No attacks yet. Open the café in another tab and try to get the staff discount code out of Byte.</p>
+  </section>
+
+  <div class="side">
+    <section class="box"><h2>OWASP LLM Top 10</h2><div class="bars" id="owasp"></div></section>
+    <section class="box"><h2>Where attacks were stopped</h2><div class="bars" id="layers"></div></section>
+    <section class="box"><h2>Average response time</h2><div class="bars" id="latency"></div></section>
+  </div>
+
+  <section class="box full">
+    <h2>All recent requests</h2>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Time</th><th>Verdict</th><th>Risk</th><th>Answered by</th><th>Message</th></tr></thead>
+      <tbody id="recent"></tbody>
+    </table></div>
+  </section>
+</main>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const LAYER_NAMES = {regex:'Rule match', similarity:'Known attack match', judge:'Gemma judge', output:'Output check', 'multi-turn':'Multi-turn detection'};
+  const store = { get(k){try{return localStorage.getItem(k)}catch{return null}}, set(k,v){try{localStorage.setItem(k,v)}catch{}} };
+  let token = new URLSearchParams(location.search).get('token') || store.get('ps-token') || '';
+  const seen = new Set(); let first = true;
+
+  const fmt = ts => new Date(ts * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  function bars(id, data, color, labelMap){
+    const box = $(id); box.innerHTML = '';
+    const entries = Object.entries(data || {}).filter(([k]) => k && k !== 'null');
+    if (!entries.length){ box.appendChild(el('p', 'empty', 'Nothing yet')); return; }
+    const max = Math.max(...entries.map(([,v]) => v));
+    entries.sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
+      const row = el('div','bar'); row.appendChild(el('span', null, (labelMap && labelMap[k]) || k));
+      row.appendChild(el('span','n', typeof v === 'number' && id === 'latency' ? v + ' ms' : v));
+      const tr = el('div','track'), f = el('div','fill'); f.style.width = (100 * v / max) + '%'; f.style.background = color; tr.appendChild(f); row.appendChild(tr);
+      box.appendChild(row);
+    });
+  }
+
+  async function tick(){
+    let res;
+    try { res = await fetch('/api/stats', {headers: token ? {'X-Admin-Token': token} : {}}); }
+    catch { $('dot').className = 'dot off'; $('status').textContent = 'Server unreachable, retrying'; return; }
+    if (res.status === 401){ $('app').hidden = true; $('login').hidden = false; if (token) $('login-err').hidden = false; return; }
+    const s = await res.json();
+    $('login').hidden = true; $('app').hidden = false;
+    $('dot').className = 'dot'; $('status').textContent = 'Live, updated ' + new Date().toLocaleTimeString();
+    $('s-blocked').textContent = s.blocked; $('s-total').textContent = s.total; $('s-cache').textContent = s.cache_hits;
+    $('s-model').textContent = s.model_calls; $('s-pii').textContent = s.pii_masked; $('s-known').textContent = s.known_attacks;
+
+    const attacks = s.recent.filter(r => r.verdict === 'block');
+    $('feed-empty').hidden = attacks.length > 0;
+    const feed = $('feed');
+    attacks.slice().reverse().forEach(r => {
+      const key = r.ts + r.prompt;
+      if (seen.has(key)) return; seen.add(key);
+      const li = el('li', first ? '' : 'new');
+      const r1 = el('div','row1'); r1.appendChild(el('span', null, fmt(r.ts)));
+      r1.appendChild(el('span','tag layer', LAYER_NAMES[r.layer] || r.layer));
+      if (r.owasp) r1.appendChild(el('span','tag owasp', r.owasp));
+      if (r.risk) r1.appendChild(el('span','tag risk', 'Risk ' + r.risk));
+      li.appendChild(r1);
+      li.appendChild(el('p','prompt', r.prompt || '(image only)'));
+      if (r.reason) li.appendChild(el('div','reason', r.reason));
+      if (r.image_text) li.appendChild(el('div','img', 'Hidden text found in image: ' + r.image_text.slice(0, 160)));
+      feed.prepend(li);
+    });
+    first = false;
+
+    bars('owasp', s.owasp, '#7AA7FF');
+    bars('layers', s.layers, '#E63946', LAYER_NAMES);
+    bars('latency', s.latency, '#F4A261');
+
+    const tb = $('recent'); tb.innerHTML = '';
+    s.recent.slice(0, 25).forEach(r => {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, fmt(r.ts)));
+      tr.appendChild(el('td', 'v-' + r.verdict, r.verdict));
+      tr.appendChild(el('td', null, r.risk ?? ''));
+      tr.appendChild(el('td', null, r.cache === 'hit' ? 'cache' : (r.model || 'shield')));
+      const p = el('td','p', r.prompt || ''); p.title = r.prompt || ''; tr.appendChild(p);
+      tb.appendChild(tr);
+    });
+  }
+
+  $('login-form').onsubmit = e => { e.preventDefault(); token = $('token').value.trim(); store.set('ps-token', token); $('login-err').hidden = true; tick(); };
+  tick(); setInterval(tick, 2000);
+})();
+</script>
+</body>
+</html>

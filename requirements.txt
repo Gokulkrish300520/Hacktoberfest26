@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+httpx
+numpy
+openai
+streamlit
+pandas
+pillow
+pytest

@@ -1,0 +1,12 @@
+.git
+__pycache__
+*.pyc
+.pytest_cache
+localroute.db
+*.zip
+dashboard
+demo
+benchmark
+redteam/report.md
+tests
+.venv

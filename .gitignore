@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+localroute.db
+benchmark/results.md
+.venv/
+.DS_Store
+app/shield/__pycache__/
